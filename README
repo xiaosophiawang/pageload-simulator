@@ -1,0 +1,7 @@
+Dev environment and dependencies:
+- I develop on Mac OS X v10.6.8
+- Install Wireshark (http://www.wireshark.org/)
+- Install PhantomJS (http://www.phantomjs.org/)
+
+Usage:
+perl run.pl
