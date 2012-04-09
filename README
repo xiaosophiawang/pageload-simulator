@@ -4,4 +4,17 @@ Dev environment and dependencies:
 - Install PhantomJS (http://www.phantomjs.org/)
 
 Usage:
-perl run.pl
+> perl run.pl www.google.com
+> perl analyze.pl
+
+Files:
+- run.pl
+    capture pcap and har files
+- analyze.pl
+    analyze pcap and har files
+- phantomjs/
+    browser driver supported by phantomjs
+- pcap/
+    pcap file analyzer
+- har/
+    har file analyzer
