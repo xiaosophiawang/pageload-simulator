@@ -10,7 +10,14 @@ if ($argc < 1) {
   exit 0;
 }
 $url = $ARGV[0];
-print $url;
+$timestamp = time();
+$filename = $url . "_" . $timestamp;
+
+##########################################
+# Clear files
+##########################################
+#print `rm -rf data/pcap/*`;
+#print `rm -rf data/har/*`;
 
 ##########################################
 # Configure and start wireshark
@@ -28,7 +35,7 @@ if ($pid) {
 
 # sub process: proc_wireshark
 sub proc_wireshark {
-  $tmp = `wireshark -i 3 -w data/pcap/$url.pcap -k -a duration:10`;
+  $tmp = `wireshark -i 3 -w data/pcap/$filename.pcap -k -a duration:10`;
 }
 
 ##########################################
@@ -36,12 +43,12 @@ sub proc_wireshark {
 ##########################################
 # We have two options here
 # 1. phantomJs which is not a real browser, but has nice APIs to access
-# 2. selenium which can drive a real browser, but we should hook on extensions
+# 2. selenium which can drive a real browser, but we should hook on extensions TODO
 $exec_pjs = "~/Downloads/phantomjs-1.5.0/bin/phantomjs"; # TODO
 $file_pjs = "phantomjs/pageload.js";
 $file_har = `$exec_pjs $file_pjs http://$url`;
 # write har file to local disk
-open FH, ">data/har/$url.har";
+open FH, ">data/har/$filename.har";
 print FH $file_har;
 close FH;
 
@@ -61,4 +68,8 @@ foreach $PS (@aPS) {
 }
 # kill the forked process as well
 kill $pid;
+
+##########################################
+# Analyze pcap and har files
+##########################################
 
