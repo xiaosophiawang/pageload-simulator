@@ -14,7 +14,7 @@ if (!Date.prototype.toISOString) {
 }
 
 // Function that generates HAR files
-function createHAR(address, title, startTime, resources) {
+function createHAR(address, title, startTime, resources, loadTime) {
   var entries = [];
 
   resources.forEach(function (resource) {
@@ -78,7 +78,9 @@ function createHAR(address, title, startTime, resources) {
         startedDateTime: startTime.toISOString(),
         id: address,
         title: title,
-        pageTimings: {}
+        pageTimings: {
+          onLoad: loadTime,
+        }
       }],
       entries: entries
     }
@@ -96,9 +98,11 @@ if (phantom.args.length < 1) {
 } else {
   page.address = system.args[1];
   page.resources = [];
+  var t_start;
 
   page.onLoadStarted = function () {
     page.startTime = new Date();
+    t_start = Date.now();
   };
 
   page.onResourceRequested = function (req) {
@@ -123,10 +127,11 @@ if (phantom.args.length < 1) {
     if (status !== 'success') {
       console.log('FAIL to load the address');
     } else {
+      t_end = Date.now();
       page.title = page.evaluate(function () {
         return document.title;
       });
-      har = createHAR(page.address, page.title, page.startTime, page.resources);
+      har = createHAR(page.address, page.title, page.startTime, page.resources, t_end - t_start);
       console.log(JSON.stringify(har, undefined, 4));
     }
     phantom.exit();

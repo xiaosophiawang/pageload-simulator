@@ -4,8 +4,22 @@
 #define	MAC_ADDR_LEN		18
 #define MAX_SITES			1000
 
-// Other define
-#define DEBUGGING			0 // Switch to print debugging info, should be 0 if printing the report
+// Network layer protocols
+#define	ETHERTYPE_IP		0x0800
+#define	ETHERTYPE_ARP		0x0806
+#define	ETHERTYPE_REVARP	0x8035
+#define	ETHERTYPE_IPv6		0x86dd
+
+// Transport layer protocols
+#define IPPROTO_TCP			6
+#define IPPROTO_UDP			17
+#define IPPROTO_ICMP		1
+#define IPPROTO_VRRP		112
+
+// Application ports
+#define APP_WEB				80
+#define APP_SECURE_WEB		443
+#define APP_DNS				53
 
 // Structure of an Ethernet header
 struct	ethernet_header {
@@ -30,6 +44,29 @@ struct ip_header {
 
 #define IP_VHL_HL(vhl)          ((vhl) & 0x0f)
 #define IP_VHL_V(vhl)           ((vhl) >> 4)
+
+// Structure of a TCP header
+struct tcp_header {
+	unsigned short  th_sport;	/* source port */
+	unsigned short  th_dport;	/* destination port */
+	uint32_t th_seq;			/* sequence number */
+	uint32_t th_ack;			/* acknowledgement number */
+	u_char header_length;		/* data offset, rsvd */
+#define TH_OFF(th)	(((th)->header_length & 0xf0) >> 4)
+	unsigned char   th_flags;
+#define TH_FIN  0x01
+#define TH_SYN  0x02
+#define TH_RST  0x04
+#define TH_PUSH 0x08
+#define TH_ACK  0x10
+#define TH_URG  0x20
+#define TH_ECE  0x40
+#define TH_CWR  0x80
+#define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
+	unsigned short  th_win;		/* window */
+	unsigned short  th_sum;		/* checksum */
+	unsigned short  th_urp;		/* urgent pointer */
+};
 
 // Structure of a UDP header
 struct udp_header {
