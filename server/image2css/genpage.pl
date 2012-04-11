@@ -16,32 +16,51 @@ $path = "../../data/pages/";
 $file_fullpath = $path . $filename . "/files/";
 $prefix = "main";
 
-# work as is if there is only one connection
-if ($num_connections == 1) {
-  print `sh image2css.sh -f $file_fullpath -o $path$filename/$prefix.css -h $path$filename/$prefix.html`;
-  exit(0);
-}
-
-# consider the case of multiple connections
+##########################################
+# Construct compared file
+##########################################
 print `rm -rf $path$filename/files_*`;
-print `rm -rf $path$filename/$prefix*`;
+print `rm -rf $path$filename/*$prefix*`;
+
 $files = `ls $file_fullpath`;
 @files = split(/\n/, $files);
 $total_size = 0;
+$body = "<body>\n";
 foreach $file (@files) {
   # only consider image files
   @parts = split(/\./, $file);
   $suffix = $parts[$parts - 1];
   if ($suffix eq "jpg" or $suffix eq "gif" or $suffix eq "png" or $suffix eq "bmp") {
     $file_name = $file_fullpath . $file;
+    $body .= "\t<div>$file<br /><img src='files/$file' /></div>\n";
     $file_size = -s $file_name;
     #print $file_name . "\t" . $file_size . "\n";
     $total_size += $file_size;
   }
 }
+$body .= "</body>\n";
 print "Bytes of all images: " . $total_size . "\n";
 $avg_size = $total_size / $num_connections;
 
+# construct html file
+open FP, ">$path$filename/_$prefix.html";
+print FP "<html><head></head>\n";
+print FP $body;
+print FP "</html>";
+close FP;
+
+##########################################
+# Single connection
+##########################################
+if ($num_connections == 1) {
+  print `sh image2css.sh -f $file_fullpath -o $path$filename/$prefix.css -h $path$filename/$prefix.html`;
+  exit(0);
+}
+
+
+##########################################
+# Single connection
+##########################################
 $body = "<body>\n";
 $head = "<head>\n";
 $cum_size = 0;
@@ -88,9 +107,11 @@ $head .= "</head>\n";
 print $dirname . "\n";
 print `sh image2css.sh -f $dir_name -o $path$filename/$prefix$files_i.css`;
 
+# construct html file
 open FP, ">$path$filename/$prefix.html";
 print FP "<html>\n";
 print FP $head;
 print FP $body;
 print FP "</html>";
 close FP;
+
