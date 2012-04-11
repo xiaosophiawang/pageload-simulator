@@ -21,6 +21,11 @@
 #define APP_SECURE_WEB		443
 #define APP_DNS				53
 
+// Others
+#define TCP_PAYLOAD_SIZE	1368
+#define OUTGOING			2
+#define INCOMING			1
+
 // Structure of an Ethernet header
 struct	ethernet_header {
 	u_char	ether_dhost[ETHER_ADDR_LEN];

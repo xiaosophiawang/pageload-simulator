@@ -1,5 +1,5 @@
 /**
- * Convert a raw pcap file to the following format.
+ * Convert each frame from a raw pcap file to the following format.
  * We focus on the TCP behaviors.
  *   - timestamp | direction | ip | port | size | optional (url/mime/etc.)
  */
@@ -86,11 +86,11 @@ int main(int argc, char **argv) {
 		sprintf(srcAddr, "%s", tmpAddr);
 		char *dstAddr = inet_ntoa(ipHeader->ip_dst);
 		if (strcmp(srcAddr, ip_address) == 0) {
-			ch = 2;
+			ch = OUTGOING;
 			fprintf(stdout, "out\t%s\t", dstAddr);
 		}
 		if (strcmp(dstAddr, ip_address) == 0) {
-			ch = 1;
+			ch = INCOMING;
 			fprintf(stdout, "in\t%s\t", srcAddr);
 		}
 		if (ch == 0) {
@@ -100,15 +100,13 @@ int main(int argc, char **argv) {
 		
 		// Get the tcp header
 		struct tcp_header *tcpHeader = (struct tcp_header*)(pktPtr + sizeEthernetHeader + sizeIPHeader);
-		if (ch == 2)
+		if (ch == OUTGOING)
 			fprintf(stdout, "%d\t", ntohs(tcpHeader->th_sport));
 		else
 			fprintf(stdout, "%d\t", ntohs(tcpHeader->th_dport));
 
 		// TODO figure out when to add 12
-		int data_len = header.len - (sizeEthernetHeader + sizeIPHeader + sizeTCPHeader + 12);
-		if (data_len < 0)
-			data_len = 0;
+		int data_len = header.len - (sizeEthernetHeader + sizeIPHeader + (tcpHeader->header_length >> 2));
 		fprintf(stdout, "%d\t", data_len);
 		
 		// Print flags
@@ -118,6 +116,22 @@ int main(int argc, char **argv) {
 			fprintf(stdout, "FIN ");
 		if (tcpHeader->th_flags & 0x02)
 			fprintf(stdout, "SYN ");
+		
+		// Print HTTP GET and Res
+		if (data_len > 0 && ch == OUTGOING) {
+			if (ntohs(tcpHeader->th_dport) == APP_SECURE_WEB) { // HTTPS
+				fprintf(stdout, "\t%d", APP_SECURE_WEB);
+			} else {
+			char *pHTTP = pktPtr + sizeEthernetHeader + sizeIPHeader + (tcpHeader->header_length >> 2);
+			int len = 0;
+			while (len < data_len && *(pHTTP + len) != '\r') {
+				len++;
+			}
+			char http[TCP_PAYLOAD_SIZE];
+			memcpy(http, pHTTP, len);
+			fprintf(stdout, "\t%s\n", http);
+			}
+		}
 		
 		fprintf(stdout, "\n");
 	} // End internal loop for reading packets 

@@ -12,6 +12,8 @@ if ($argc < 1) {
 $url = $ARGV[0];
 $timestamp = time();
 $filename = $url . "_" . $timestamp;
+$filename =~ s/\//_/g;
+$filename =~ s/~/-/g;
 
 ##########################################
 # Clear files
