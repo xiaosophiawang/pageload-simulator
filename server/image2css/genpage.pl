@@ -59,7 +59,7 @@ if ($num_connections == 1) {
 
 
 ##########################################
-# Single connection
+# Multiple connections
 ##########################################
 $body = "<body>\n";
 $head = "<head>\n";

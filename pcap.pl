@@ -7,6 +7,9 @@ $argc = @ARGV;
 $ip = "172.28.7.27";
 $ip_ap = "172.28.7.1";
 
+$ip = "128.208.4.179";
+$ip_ap = "128.208.4.1";
+
 # compile pcap analyzer
 print `rm pcap/pcap_analyzer`;
 print `gcc -o pcap/pcap_analyzer -lpcap pcap/pcap_analyzer.c`;
@@ -15,8 +18,14 @@ print `gcc -o pcap/pcap_analyzer -lpcap pcap/pcap_analyzer.c`;
 # TODO auto find filenames and ip addrs
 $filename = "cnn.com_1334002655";
 $filename = "piigeon.org_datauri_tudou.html_1334081534";
-$filename = "abstract.cs.washington.edu_-wangxiao_datauri_tudou.html_1334081292";
 $filename = "abstract.cs.washington.edu_-wangxiao_datauri_run.php_1334083375";
+$filename = "abstract.cs.washington.edu_-wangxiao_datauri_tudou.html_1334081292";
+
+# wired experiments
+$filename = "cnn.com_1334191379_w";
+$filename = "abstract.cs.washington.edu_-wangxiao_datauri_tudou.com_3_main.html_1334192639";
+$filename = "abstract.cs.washington.edu_-wangxiao_datauri_tudou.com_24_main.html_1334192688";
+
 $result = `./pcap/pcap_analyzer -t data/pcap/$filename.pcap -i $ip`;
 
 # write data file to local disk
@@ -24,14 +33,16 @@ open FH, ">data/results/$filename";
 print FH $result;
 close FH;
 
-# construct hashes
+##########################################
+# Construct hashes with (IP, port) as the key
+##########################################
 %hash = ();
 
 @frames = split(/\n/, $result);
 foreach $frame (@frames) {
   @items = split(/\t/, $frame);
   $num = @items;
-  if ($num > 1 and $items[2] != $ip_ap) {
+  if ($num > 1 and $items[2] ne $ip_ap) {
     $key = $items[2] . " " . $items[3];
     if ( exists $hash{$key}) {
     } else {
@@ -42,11 +53,15 @@ foreach $frame (@frames) {
   }
 }
 
+##########################################
+# Analysis
+##########################################
 # find out # of parallel requests
 # find window sizes
 @timestamps = []; # last timestamp of all currently open connections
 $para_conn = 0;
 $count = 0;
+$alpha = 0.5;
 foreach $key (keys %hash) {
   $count += 1;
   @arr = @{$hash{$key}};
@@ -72,6 +87,9 @@ foreach $key (keys %hash) {
   }
 
   # calculate window sizes
+  # We identify packets as belonging to different windows by comparing
+  # their timestamps. If the difference is larger than a factor of RTT
+  # (e.g., 0.5), we consider them as different windows
   print "\n" . $key;
   $ch = 0;
   $rtt = 0;
@@ -89,10 +107,12 @@ foreach $key (keys %hash) {
     $opt = ($items[4] && int($items[2]) < 1368) ? "GET" : '';
     if ($opt) {
       print $win_size;
-      print "\n" . $opt . "\t";
-      $win_size = 0;
+      print "\t" . $opt . "\t";
+      #$win_size = 0;
       $last_ts = int($items[0]);
     }
+
+    # Consider only packets between SYN and FIN
     if ($items[1] eq "out" and int($items[2]) > 0) { # HTTP GET
       $ch = 1;
       $win_size = 0;
@@ -101,11 +121,13 @@ foreach $key (keys %hash) {
     if ($items[1] eq "out" and $items[3] eq "ACK FIN ") { # client sends FIN
       $ch = 0;
     }
+
+    # Consider only incoming packets (non-ack)
     if ($ch == 1 && $items[1] eq "in" && int($items[2]) > 0) {
       #print $items[1] . "\t" . $items[2] . "\t" . (int($items[0]) - $last_ts) . "\n";
-      if ($last_ts > 0 && int($items[0]) - $last_ts > $rtt * 0.4) {
+      if ($last_ts > 0 && int($items[0]) - $last_ts > $rtt * $alpha) {
         if ($win_size > 0) {
-          print $win_size . "\t";
+          print $win_size . "\n";
         }
         $win_size = 0;
         $last_ts = 0;
