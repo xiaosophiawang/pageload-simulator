@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 			}
 			char http[TCP_PAYLOAD_SIZE];
 			memcpy(http, pHTTP, len);
-			fprintf(stdout, "\t%s\n", http);
+			fprintf(stdout, "\t%s", http);
 			}
 		}
 		
