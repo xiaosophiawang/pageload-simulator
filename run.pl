@@ -38,7 +38,7 @@ if ($pid) {
 # sub process: proc_wireshark
 sub proc_wireshark {
   # TODO -i interface is problematic and needs config
-  $tmp = `wireshark -i 1 -w data/pcap/$filename.pcap -k -a duration:10`;
+  $tmp = `wireshark -i 3 -w data/pcap/$filename.pcap -k -a duration:10`;
 }
 
 ##########################################
