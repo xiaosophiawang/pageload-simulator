@@ -29,9 +29,11 @@ my $file2 = "data/crawl/1334275380/$url
 
 $start = time();
 
-# read two files and compute hashes
+##########################################
+# Read files and calculate hash of each
+# line
+##########################################
 open F1, $file1;
-
 $lc_1 = 0;
 $fs_1 = 0;
 @hash_1 = [];
@@ -48,7 +50,6 @@ while (my $line = <F1>) {
 print "# 1 lines:\t" . $lc_1 . "\t" . $fs_1 . "\n";
 
 open F2, $file2;
-
 $lc_2 = 0;
 $fs_2 = 0;
 @hash_2 = [];
@@ -74,8 +75,12 @@ $end = time();
 print "Time spent: " . ($end - $start) . "s \n";
 
 
-sub getUnmatchedLines { # Args: @hash_1, @hash_2
-  my ($hash_1, $hash_2) = @_;
+##########################################
+# Align two arrays using the longest common
+# subsequence (LCS) algorithm O(n^2)
+##########################################
+sub getUnmatchedLines {
+  my ($hash_1, $hash_2) = @_; # Args: @hash_1, @hash_2
   @hash_1 = @{$hash_1};
   @hash_2 = @{$hash_2};
   $num_1 = @hash_1;
