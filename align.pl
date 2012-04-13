@@ -9,75 +9,151 @@
 
 use Digest::MD5 qw(md5_hex);
 use Time::HiRes qw/ time sleep /;
+use Switch;
+use JSON;
 
 ##########################################
-# Check arguments
+# Run commands based on arguments
 ##########################################
 $argc = @ARGV;
 
 if ($argc < 1) {
-  print "Usage: " . $0 . " [url no http or www]\n";
+  print "Usage: " . $0 . " [html | har] [url no http or www]\n";
   exit 0;
 }
-$url = $ARGV[0];
+$type = $ARGV[0];
+$url = $ARGV[1];
 
-# inputs
-my $file1 = "data/crawl/1334275320/$url
-.html";
-my $file2 = "data/crawl/1334275380/$url
-.html";
-
+# start timestamp
 $start = time();
 
-##########################################
-# Read files and calculate hash of each
-# line
-##########################################
-open F1, $file1;
-$lc_1 = 0;
-$fs_1 = 0;
-@hash_1 = [];
-@cont_1 = [];
-while (my $line = <F1>) {
-  $line =~ s/^[ \t\n]+//g;
-  if ($line) {
-    $cont_1[$lc_1] = $line;
-    $hash_1[$lc_1] = md5_hex($line);
-    $lc_1++;
-    $fs_1 += length($line);
+# specify timestamps
+$ts_1 = "1334275320";
+$ts_2 = "1334275380";
+
+# specify file names
+$file_html_1 = "data/crawl/$ts_1/$url
+.html";
+$file_html_2 = "data/crawl/$ts_2/$url
+.html";
+$file_har_1 = "data/crawl/$ts_1/$url
+.har";
+$file_har_2 = "data/crawl/$ts_2/$url
+.har";
+
+# main
+switch ($type) {
+  case ("html") {
+    processHTML();
+  }
+  case ("har") {
+    processHAR();
+  }
+  else {
+    print "Undefined command\n";
   }
 }
-print "# 1 lines:\t" . $lc_1 . "\t" . $fs_1 . "\n";
 
-open F2, $file2;
-$lc_2 = 0;
-$fs_2 = 0;
-@hash_2 = [];
-@cont_2 = [];
-while (my $line = <F2>) {
-  $line =~ s/^[ \t\n]+//g;
-  if ($line) {
-    $cont_2[$lc_2] = $line;
-    $hash_2[$lc_2] = md5_hex($line);
-    $lc_2++;
-    $fs_2 += length($line);
-  }
-}
-print "# 2 lines:\t" . $lc_2 . "\t" . $fs_2 . "\n";
-
-($c, $b) = getUnmatchedLines(\@hash_1, \@hash_2);
-print "# Matched lines:" . $c . "\t" . $b . "\n";
-$p = $b / $fs_2;
-print "A reduction of $p in bytes\n";
-
+# end timestamp
 $end = time();
-
 print "Time spent: " . ($end - $start) . "s \n";
 
 
 ##########################################
-# Align two arrays using the longest common
-# subsequence (LCS) algorithm O(n^2)
+# Read HTML files and calculate hash of
+# each line
+##########################################
+sub processHTML {
+  open F1, $file_html_1;
+  $lc_1 = 0;
+  $fs_1 = 0;
+  @hash_1 = [];
+  @cont_1 = [];
+  while (my $line = <F1>) {
+    $line =~ s/^[ \t\n]+//g;
+    if ($line) {
+      $cont_1[$lc_1] = $line;
+      $hash_1[$lc_1] = md5_hex($line);
+      $lc_1++;
+      $fs_1 += length($line);
+    }
+  }
+  print "# 1 lines:\t" . $lc_1 . "\t" . $fs_1 . "\n";
+
+  open F2, $file_html_2;
+  $lc_2 = 0;
+  $fs_2 = 0;
+  @hash_2 = [];
+  @cont_2 = [];
+  while (my $line = <F2>) {
+    $line =~ s/^[ \t\n]+//g;
+    if ($line) {
+      $cont_2[$lc_2] = $line;
+      $hash_2[$lc_2] = md5_hex($line);
+      $lc_2++;
+      $fs_2 += length($line);
+    }
+  }
+  print "# 2 lines:\t" . $lc_2 . "\t" . $fs_2 . "\n";
+
+  ($c, $b) = getUnmatchedLines(\@hash_1, \@hash_2);
+  print "# Matched lines:" . $c . "\t" . $b . "\n";
+  $p = $b / $fs_2;
+  print "A reduction of $p in bytes\n";
+}
+
+##########################################
+# Read HAR files and compare requests
+##########################################
+sub processHAR {
+  open F1, $file_har_1;
+  $hs_1 = "";
+  while (my $line = <F1>) {
+    $hs_1 .= $line;
+  }
+
+  open F2, $file_har_2;
+  $hs_2 = "";
+  while (my $line = <F2>) {
+    $hs_2 .= $line;
+  }
+
+  %hs_1 = %{decode_json($hs_1)};
+  %hs_2 = %{decode_json($hs_2)};
+
+  @hs_1 = @{$hs_1{"log"}{"entries"}};
+  @hs_2 = @{$hs_2{"log"}{"entries"}};
+
+  %htable = ();
+  foreach $entry (@hs_1) {
+    %entry = %{$entry};
+    $htable{$entry{"request"}{"url"}} = 1;
+  }
+
+  $num = 0;
+  $num_new = 0;
+  $counts = 0;
+  foreach $entry (@hs_2) {
+    $num++;
+    %entry = %{$entry};
+    if ($htable{$entry{"request"}{"url"}}) {
+    } else {
+      $num_new++;
+      $url = $entry{"request"}{"url"};
+      print $url . "\n";
+      $content = `curl $url &`;
+      $counts += length($content);
+      print $content;
+      print "\n\n";
+    }
+  }
+  print "# new bytes: $counts \n";
+  print "# new requests: $num_new/$num \n";
+}
+
+##########################################
+# Align two arrays using dynamic
+# programming in O(n^2)
 ##########################################
 sub getUnmatchedLines {
   my ($hash_1, $hash_2) = @_; # Args: @hash_1, @hash_2
