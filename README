@@ -10,11 +10,15 @@ Usage:
 Files:
 - run.pl
     capture pcap and har files
-- analyze.pl
+- pcap.pl
     analyze pcap and har files
+- crawler.pl
+    crawls a list of web pages and stores the html & har files
+- align.pl
+    calculates the diff (in bytes) of pages of the same url
 - phantomjs/
     browser driver supported by phantomjs
 - pcap/
     pcap file analyzer
-- har/
-    har file analyzer
+- server/
+    scripts to merge images into any number of requests
