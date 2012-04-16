@@ -133,19 +133,24 @@ sub processHAR {
   $num = 0;
   $num_new = 0;
   $counts = 0;
+  @urls = [];
   foreach $entry (@hs_2) {
     $num++;
     %entry = %{$entry};
     if ($htable{$entry{"request"}{"url"}}) {
     } else {
-      $num_new++;
       $url = $entry{"request"}{"url"};
-      print $url . "\n";
       $content = `curl $url &`;
       $counts += length($content);
-      print $content;
-      print "\n\n";
+
+      # find the type of new reqs
+      @arr = split(/\?/, $url);
+      $urls[$num_new] = $arr[0];
+      $num_new++;
     }
+  }
+  foreach $url (@urls) {
+    print $url , "\n";
   }
   print "# new bytes: $counts \n";
   print "# new requests: $num_new/$num \n";
